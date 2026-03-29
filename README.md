@@ -1,4 +1,4 @@
-# SHIPIQ — Cargo optimization service
+# SHIPIQ
 
 REST API that allocates cargo volumes into vessel tanks under **single-cargo-type-per-tank** rules: a tank may hold only one cargo ID at a time (splitting that cargo across many tanks is allowed). The objective is to **maximize total loaded volume**.
 
@@ -58,8 +58,6 @@ Response body (fields always present; `allocations` lists positive loads only):
 }
 ```
 
-Optional auth: set `SHIPIQ_API_KEY` and send header `X-API-Key: <value>` (skipped for `/health`).
-
 ## Local setup
 
 **Python 3.11+** recommended.
@@ -70,7 +68,6 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 export PYTHONPATH=src
-cp .env.example .env
 python -m shipiq.api.app
 ```
 
@@ -78,7 +75,7 @@ Server listens on `PORT` (default `8080`).
 
 ### Tests
 
-**Unit:** `allocate_cargo_to_tanks` (including bottlenecks, empty input, per-tank constraints), `Cargo`/`Tank` validation, and `parse_cargos_tanks`. **Integration (Flask):** `/input` → `/optimize` → `/results`, error statuses, and optional `X-API-Key`.
+**Unit:** `allocate_cargo_to_tanks` (including bottlenecks, empty input, per-tank constraints), `Cargo`/`Tank` validation, and `parse_cargos_tanks`. **Integration (Flask):** `/input` → `/optimize` → `/results`, error statuses.
 
 ```bash
 cd shipiq
@@ -97,7 +94,7 @@ docker build -t shipiq:latest .
 docker run --rm -p 8080:8080 shipiq:latest
 ```
 
-The container runs `gunicorn shipiq.wsgi:app` with `PYTHONPATH=/app/src`.
+The image uses `docker-entrypoint.sh` to run gunicorn on `0.0.0.0:$PORT` (default `8080`, required for Render and similar hosts). `PYTHONPATH=/app/src`.
 
 Example:
 
@@ -109,25 +106,3 @@ curl -s -X POST http://localhost:8080/input \
 curl -s -X POST http://localhost:8080/optimize
 curl -s http://localhost:8080/results
 ```
-
-## Cloud deploy (bonus)
-
-Build and push the image to your registry, then run on Cloud Run, ECS, or AKS with `PORT` matching the platform’s injected port. Ensure CBC is available (this image installs `coinor-cbc`).
-
-## Layout
-
-```
-shipiq/
-  src/shipiq/
-    domain/           # entities + result DTOs
-    services/         # allocation (MILP)
-    application/      # job store
-    api/              # Flask app, routes, validation
-  tests/
-  Dockerfile
-  requirements.txt
-```
-
-## License
-
-Assignment / demo code — adjust as needed for your submission.
